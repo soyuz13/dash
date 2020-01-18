@@ -62,52 +62,93 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([
-    html.Label('Выберите магазин'),
-    dcc.Dropdown(
-        id='input-store',
-        options=[{'label': x, 'value': x} for x in names]
-    ),
 
-    html.Label('Выберите неделю'),
-    dcc.Dropdown(
-        id='input-week',
-        options=[
-            {'label': '3', 'value': 3},
-            {'label': '2', 'value': 2},
-            {'label': '1', 'value': 1}
+    html.Div([
+        html.Div([
+            dcc.Dropdown(
+                id='input-store',
+                options=[{'label': x, 'value': x} for x in names],
+                placeholder='Выберите магазин'
+            )
         ],
-        value=3
-    ),
-    html.Label('Выберите год'),
-    dcc.Dropdown(
-        id='input-year',
-        options=[
-            {'label': '2020', 'value': 2020},
-            {'label': '2019', 'value': 2019},
-            {'label': '2018', 'value': 2018}
-        ],
-        value=2020
-    ),
-    html.Label(' .'),
-    html.Button(id='submit-button', n_clicks=0, children='Показать'),
-    dcc.Graph(id='chart')
-],
-    style={'width': '50%'}
-)
+            style={'display': 'inline-block', 'width': '15%', 'margin-left': '5px'}),
+
+        html.Div([
+            dcc.Dropdown(
+                id='input-week',
+                options=[
+                    {'label': '3', 'value': 3},
+                    {'label': '2', 'value': 2},
+                    {'label': '1', 'value': 1}
+                ],
+                placeholder='Выберите неделю'
+            )
+            ],
+            style={'display': 'inline-block', 'width': '15%', 'margin-left': '5px'}),
+
+
+        html.Div([
+            dcc.Dropdown(
+                id='input-year',
+                options=[
+                    {'label': '2020', 'value': 2020},
+                    {'label': '2019', 'value': 2019},
+                    {'label': '2018', 'value': 2018}
+                ],
+                placeholder='Выберите год'
+            )
+            ],
+            style={'display': 'inline-block', 'width': '15%', 'margin-left': '5px'}),
+
+        html.Div([
+            html.Button(id='submit-button', n_clicks=0, children='Показать')
+            ],
+            style={'margin-left': '5px'}),
+        ]),
+
+    html.Div([
+        dcc.Graph(id='chart')
+    ])
+
+])
 
 row_ = 3
 col_ = 3
+
+
+@app.callback(Output('input-year', 'options'),
+              [Input('input-store', 'value')])
+def update_year(value):
+    if value:
+        y1 = dfd[value].index.year.unique().tolist()
+        y1.sort(reverse=True)
+        return [{'label': x, 'value': x} for x in y1]
+    else:
+        raise dash.exceptions.PreventUpdate
+
+
+@app.callback(Output('input-week', 'options'),
+              [Input('input-year', 'value'),
+               Input('input-store', 'value')])
+def update_week(val1, val2):
+    if val1 and val2:
+        y2 = dfd[val2][str(val1)]['week'].unique().tolist()
+        y2.sort(reverse=True)
+        return [{'label': x, 'value': x} for x in y2]
+    else:
+        raise dash.exceptions.PreventUpdate
+
+
+
 
 @app.callback(Output('chart', 'figure'),
               [Input('submit-button', 'n_clicks')],
               [State('input-store', 'value'), State('input-year', 'value'), State('input-week', 'value')])
 def update_chart(n_clicks, input1, input2, input3):
-    print(n_clicks)
-    print()
     if not n_clicks:
         raise dash.exceptions.PreventUpdate
     else:
-        ddf = dfd[input1][(dfd[input1].index >= str(input2)) & (dfd[input1]['week'] == input3)]
+        ddf = dfd[input1][(dfd[input1].index.year == input2) & (dfd[input1]['week'] == input3)]
         xa = ddf.index.day
         figm = make_subplots(rows=row_, cols=col_,
                             # column_width=[0.25, 0.3, 0.45],
@@ -151,7 +192,6 @@ def update_chart(n_clicks, input1, input2, input3):
                                       row=r_ + 1, col=c_ + 1)
                 figm.update_xaxes(nticks=len(ddf) + 1, tickangle=0, showgrid=True, tickfont=dict(size=9))
 
-
                 t_fmt = [['.4s', '.3s', '%'],
                          ['.3s', '%', '.2s'],
                          ['.3s', '%', '.2s']]
@@ -163,14 +203,13 @@ def update_chart(n_clicks, input1, input2, input3):
                 figm.update_yaxes(secondary_y=False, tickformat=t_fmt[r_][c_], dtick=d_tick[r_][c_], row=r_ + 1, col=c_ + 1)
 
         figm.update_layout(title_text=f"Неделя {input3}, магазин {input1}",
-                               title_font_size=14,
-                               template='presentation',
-                               showlegend=False,
-                               height=700, width=1200
+                           title_font_size=14,
+                           template='presentation',
+                           showlegend=False,
+                           height=700, width=1000
                            )
 
         return figm
-
 
 
 if __name__ == '__main__':
