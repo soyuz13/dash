@@ -1,6 +1,7 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
+from dash.dependencies import Input, Output, State
 
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -56,103 +57,6 @@ for k in dfd:
         dfd[k][i+'diff%'] = (dfd[k][i+'f']-dfd[k][i+'f_D-7'])/dfd[k][i+'f_D-7']
         dfd[k][i+'diff'] = dfd[k][i+'f']-dfd[k][i+'f_D-7']
 
-year = '2020'
-week = 3
-row_ = 3
-col_ = 3
-
-for k in dfd:
-    figm = make_subplots(rows=row_, cols=col_,
-                         # column_width=[0.25, 0.3, 0.45],
-                         # row_heights=[0.32, 0.04, 0.32, 0.32],
-                         specs=[[{"secondary_y": True}, {"secondary_y": True}, {"secondary_y": True}],
-                                # [{"type": 'indicator'}, {"type": 'indicator'}, {"type": 'indicator'}],
-                                [{"secondary_y": True}, {"secondary_y": True}, {"secondary_y": True}],
-                                [{"secondary_y": True}, {"secondary_y": True}, {"secondary_y": True}]],
-                         subplot_titles=("Реал", "Вход", "Конв", "Усс", "Акс", "СЧ", 'ТН', 'Кред', 'АДТ'),
-                         horizontal_spacing=0.08, vertical_spacing=0.08)
-    ddf = dfd[k][(dfd[k].index >= year) & (dfd[k]['week'] == week)]
-    xa = ddf.index.day
-
-    for r_ in range(row_):
-        for c_ in range(col_):
-            p = lst[int(r_ / 2)][c_] + 'p'
-            f = lst[int(r_ / 2)][c_] + 'f'
-            d = lst[int(r_ / 2)][c_] + 'diff%'
-            d2 = lst[int(r_ / 2)][c_] + 'diff'
-
-
-            m = max(ddf[p].max(), ddf[f].max()) * 1.1
-            figm.add_trace(go.Scatter(x=xa, y=ddf[p], name="План", mode='lines', marker_color='red'), row=r_ + 1,
-                           col=c_ + 1)
-            figm.add_trace(go.Scatter(x=xa, y=ddf[f], name="Факт", mode='lines', marker_color='green'), row=r_ + 1,
-                           col=c_ + 1)
-            figm.add_trace(go.Bar(x=xa,
-                                    y=ddf[d],
-                                    # hoverinfo='x+text',
-                                    hovertext=ddf[d2],
-                                    hovertemplate='%{y:.2%}, %{hovertext:.3s}',
-                                    textposition='auto',
-                                    text=ddf[d],
-                                    texttemplate="%{y:%}",
-                                    marker_color='LightBlue',
-                                    name="Откл.",
-                                    opacity=0.5),
-                            secondary_y=True,
-                            row=r_ + 1, col=c_ + 1)
-            figm.update_yaxes(range=[0, m], row=r_ + 1, col=c_ + 1, tickfont=dict(size=9), tickformat='s')
-            figm.update_yaxes(secondary_y=True, range=[-0.75, 0.75],
-                                dtick=0.25, tickfont=dict(size=9), tickformat=' >3%',
-                                zeroline=True, zerolinewidth=2, zerolinecolor='LightBlue',
-                                linecolor='LightBlue', gridcolor='LightBlue',
-                                row=r_ + 1, col=c_ + 1)
-            figm.update_xaxes(nticks=len(ddf) + 1, tickangle=0, showgrid=True, tickfont=dict(size=9))
-
-            if (c_ == 0 and r_ == 0):
-                figm.update_yaxes(secondary_y=False, tickformat='.4s', dtick=250000, row=r_ + 1, col=c_ + 1)
-            if (c_ == 1 and r_ == 0):
-                figm.update_yaxes(secondary_y=False, tickformat='.3s', dtick=100, row=r_ + 1, col=c_ + 1)
-            if (c_ == 2 and r_ == 0):
-                figm.update_yaxes(secondary_y=False, tickformat='%', row=r_ + 1, col=c_ + 1)
-
-            if (c_ == 0 and r_ == 2):
-                figm.update_yaxes(secondary_y=False, tickformat='.3s', dtick=10000, row=r_ + 1, col=c_ + 1)
-            if (c_ == 1 and r_ == 2):
-                figm.update_yaxes(secondary_y=False, tickformat='%', dtick=0.02, row=r_ + 1, col=c_ + 1)
-            if (c_ == 2 and r_ == 2):
-                figm.update_yaxes(secondary_y=False, tickformat='.2s', dtick=2000, row=r_ + 1, col=c_ + 1)
-
-            if (c_ == 0 and r_ == 3):
-                figm.update_yaxes(secondary_y=False, tickformat='.3s', dtick=100000, row=r_ + 1, col=c_ + 1)
-            if (c_ == 1 and r_ == 3):
-                figm.update_yaxes(secondary_y=False, tickformat='%', dtick=0.04, row=r_ + 1, col=c_ + 1)
-            if (c_ == 2 and r_ == 3):
-                figm.update_yaxes(secondary_y=False, tickformat='.2s', dtick=0.005, row=r_ + 1, col=c_ + 1)
-
-    figm.update_layout(title_text=f"Неделя {week}, магазин {k}",
-                       title_font_size=14,
-                       template='presentation',
-                       showlegend=False,
-                       #height = 800, width = 1000
-                       )
-
-
-
-
-
-'''figm = make_subplots(rows=2, cols=2,
-                     specs=[[{"secondary_y": True}, {"secondary_y": True}],
-                            [{"secondary_y": True}, {"secondary_y": True}]],
-                     subplot_titles=("Реал", "Вход", "Усс", "Акс", 'ТН', 'Кред'),
-                     horizontal_spacing=0.08, vertical_spacing=0.2)
-figm.add_trace(go.Scatter(x=[1,2,3,4,5], y=[2,6,4,8,3], name="План", mode='lines', marker_color='red'), row=1, col=1)
-figm.add_trace(go.Scatter(x=[1,2,3,4,5], y=[3,4,3,4,5], name="План", mode='lines', marker_color='red'), row=1, col=2)
-figm.add_trace(go.Scatter(x=[1,2,3,4,5], y=[4,6,4,7,6], name="План", mode='lines', marker_color='red'), row=2, col=1)
-figm.add_trace(go.Scatter(x=[1,2,3,4,5], y=[3,5,7,3,4], name="План", mode='lines', marker_color='red'), row=2, col=2)'''
-
-
-
-
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -160,11 +64,13 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = html.Div([
     html.Label('Выберите магазин'),
     dcc.Dropdown(
+        id='input-store',
         options=[{'label': x, 'value': x} for x in names]
     ),
 
     html.Label('Выберите неделю'),
     dcc.Dropdown(
+        id='input-week',
         options=[
             {'label': '3', 'value': 3},
             {'label': '2', 'value': 2},
@@ -174,6 +80,7 @@ app.layout = html.Div([
     ),
     html.Label('Выберите год'),
     dcc.Dropdown(
+        id='input-year',
         options=[
             {'label': '2020', 'value': 2020},
             {'label': '2019', 'value': 2019},
@@ -181,9 +88,90 @@ app.layout = html.Div([
         ],
         value=2020
     ),
-    dcc.Graph(figure=figm)
+    html.Label(' .'),
+    html.Button(id='submit-button', n_clicks=0, children='Показать'),
+    dcc.Graph(id='chart')
 ],
-style={'width': '50%'})
+    style={'width': '50%'}
+)
+
+row_ = 3
+col_ = 3
+
+@app.callback(Output('chart', 'figure'),
+              [Input('submit-button', 'n_clicks')],
+              [State('input-store', 'value'), State('input-year', 'value'), State('input-week', 'value')])
+def update_chart(n_clicks, input1, input2, input3):
+    print(n_clicks)
+    print()
+    if not n_clicks:
+        raise dash.exceptions.PreventUpdate
+    else:
+        ddf = dfd[input1][(dfd[input1].index >= str(input2)) & (dfd[input1]['week'] == input3)]
+        xa = ddf.index.day
+        figm = make_subplots(rows=row_, cols=col_,
+                            # column_width=[0.25, 0.3, 0.45],
+                            # row_heights=[0.32, 0.04, 0.32, 0.32],
+                            specs=[[{"secondary_y": True}, {"secondary_y": True}, {"secondary_y": True}],
+                                   [{"secondary_y": True}, {"secondary_y": True}, {"secondary_y": True}],
+                                   [{"secondary_y": True}, {"secondary_y": True}, {"secondary_y": True}]],
+                            subplot_titles=("Реал", "Вход", "Конв", "Усс", "Акс", "СЧ", 'ТН', 'Кред', 'АДТ'),
+                            horizontal_spacing=0.08, vertical_spacing=0.08)
+
+        for r_ in range(row_):
+            for c_ in range(col_):
+                p = lst[r_][c_] + 'p'
+                f = lst[r_][c_] + 'f'
+                d = lst[r_][c_] + 'diff%'
+                d2 = lst[r_][c_] + 'diff'
+
+                m = max(ddf[p].max(), ddf[f].max()) * 1.1
+                figm.add_trace(go.Scatter(x=xa, y=ddf[p], name="План", mode='lines', marker_color='red'), row=r_ + 1,
+                                   col=c_ + 1)
+                figm.add_trace(go.Scatter(x=xa, y=ddf[f], name="Факт", mode='lines', marker_color='green'), row=r_ + 1,
+                                   col=c_ + 1)
+                figm.add_trace(go.Bar(x=xa,
+                                          y=ddf[d],
+                                          # hoverinfo='x+text',
+                                          hovertext=ddf[d2],
+                                          hovertemplate='%{y:.2%}, %{hovertext:.3s}',
+                                          textposition='auto',
+                                          text=ddf[d],
+                                          texttemplate="%{y:%}",
+                                          marker_color='LightBlue',
+                                          name="Откл.",
+                                          opacity=0.5),
+                                   secondary_y=True,
+                                   row=r_ + 1, col=c_ + 1)
+                figm.update_yaxes(range=[0, m], row=r_ + 1, col=c_ + 1, tickfont=dict(size=9), tickformat='s')
+                figm.update_yaxes(secondary_y=True, range=[-0.75, 0.75],
+                                      dtick=0.25, tickfont=dict(size=9), tickformat=' >3%',
+                                      zeroline=True, zerolinewidth=2, zerolinecolor='LightBlue',
+                                      linecolor='LightBlue', gridcolor='LightBlue',
+                                      row=r_ + 1, col=c_ + 1)
+                figm.update_xaxes(nticks=len(ddf) + 1, tickangle=0, showgrid=True, tickfont=dict(size=9))
+
+
+                t_fmt = [['.4s', '.3s', '%'],
+                         ['.3s', '%', '.2s'],
+                         ['.3s', '%', '.2s']]
+
+                d_tick = [[250000, 100, None],
+                          [10000, 0.02, 2000],
+                          [100000, 0.04, 0.005]]
+
+                figm.update_yaxes(secondary_y=False, tickformat=t_fmt[r_][c_], dtick=d_tick[r_][c_], row=r_ + 1, col=c_ + 1)
+
+        figm.update_layout(title_text=f"Неделя {input3}, магазин {input1}",
+                               title_font_size=14,
+                               template='presentation',
+                               showlegend=False,
+                               height=700, width=1200
+                           )
+
+        return figm
+
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
