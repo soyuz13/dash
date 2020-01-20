@@ -8,6 +8,8 @@ from plotly.subplots import make_subplots
 import pandas as pd
 import datetime
 
+import plotly.figure_factory as ff
+
 
 def pars(x):
     try:
@@ -103,7 +105,7 @@ app.layout = html.Div([
 ])
 
 row_ = 3
-col_ = 3
+col_ = 9
 
 
 @app.callback(Output('input-year', 'options'),
@@ -143,31 +145,33 @@ def update_chart(input1, input2, input3):
     else:
         ddf = dfd[input1][(dfd[input1].index.year == input2) & (dfd[input1]['week'] == input3)]
         xa = ddf.index.day
-        figm = make_subplots(rows=row_, cols=col_,
-                            # column_width=[0.25, 0.3, 0.45],
-                            # row_heights=[0.32, 0.04, 0.32, 0.32],
-                            specs=[[{"secondary_y": True}, {"secondary_y": True}, {"secondary_y": True}],
-                                   [{"secondary_y": True}, {"secondary_y": True}, {"secondary_y": True}],
-                                   [{"secondary_y": True}, {"secondary_y": True}, {"secondary_y": True}]],
-                            subplot_titles=("Реал", "Вход", "Конв", "Усс", "Акс", "СЧ", 'ТН', 'Кред', 'АДТ'),
-                            horizontal_spacing=0.08, vertical_spacing=0.08)
+        figm = make_subplots(rows=row_, cols=col_, column_width=[0.3, 0.025, 0.00, 0.3, 0.025, 0.00, 0.31, 0.025, 0.00],
+                             specs=[[{"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}],
+                                   [{"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}],
+                                   [{"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}]],
+                             subplot_titles=("Реал", '%', '', "Вход", '%', '', "Конв", '%', '',
+                                            "Усс", '%', '', "Акс", '%', '', "СЧ", '%', '',
+                                            'ТН', '%', '', 'Кред', '%', '', 'АДТ', '%', ''),
+                             horizontal_spacing=0.035, vertical_spacing=0.1)
 
         for ro in range(1, row_+1):
-            for co in range(1, col_+1):
-                p = lst[ro-1][co-1] + 'p'
-                f = lst[ro-1][co-1] + 'f'
-                d = lst[ro-1][co-1] + 'diff%'
-                h = lst[ro-1][co-1] + 'diff'
+            for co in range(1, col_+1, 3):
+                co2 = int((co-1)/3)
+                p = lst[ro-1][co2] + 'p'
+                f = lst[ro-1][co2] + 'f'
+                d = lst[ro-1][co2] + 'diff%'
+                h = lst[ro-1][co2] + 'diff'
 
                 m = max(ddf[p].max(), ddf[f].max()) * 1.1
-                figm.add_trace(go.Scatter(x=xa, y=ddf[p], name="План", mode='lines', marker_color='red'),
-                               row=ro, col=co)
-                figm.add_trace(go.Scatter(x=xa, y=ddf[f], name="Факт", mode='lines', marker_color='green'),
-                               row=ro, col=co)
-                figm.add_trace(go.Bar(x=xa, y=ddf[d], hovertext=ddf[h], hovertemplate='%{y:.2%}, %{hovertext:.3s}',
-                                      textposition='auto', text=ddf[d], texttemplate="%{y:%}", name="Откл.",
-                                      marker_color='LightBlue', opacity=0.5),
-                               secondary_y=True, row=ro, col=co)
+
+                trace_plan = go.Scatter(x=xa, y=ddf[p], name="План", mode='lines', marker_color='red')
+                trace_fact = go.Scatter(x=xa, y=ddf[f], name="Факт", mode='lines', marker_color='green')
+                trace_diff = go.Bar(x=xa, y=ddf[d], hovertext=ddf[h], hovertemplate='%{y:.2%}, %{hovertext:.3s}',
+                                    textposition='auto', text=ddf[d], texttemplate="%{y:%}", name="Откл.",
+                                    marker_color='LightBlue', opacity=0.5)
+
+                figm.add_traces([trace_plan, trace_fact, trace_diff], secondary_ys=[False, False, True],
+                                rows=[ro]*3, cols=[co]*3)
 
                 t_fmt = [['.4s', '.3s', '%'],
                          ['.3s', '%', '.2s'],
@@ -177,19 +181,27 @@ def update_chart(input1, input2, input3):
                           [10000, 0.02, 2000],
                           [100000, 0.04, 0.005]]
 
-                figm.update_yaxes(range=[0, m], tickformat=t_fmt[ro-1][co-1], dtick=d_tick[ro-1][co-1],
+                figm.update_yaxes(range=[0, m], tickformat=t_fmt[ro-1][co2], dtick=d_tick[ro-1][co2],
                                   row=ro, col=co, tickfont=dict(size=9))
                 figm.update_yaxes(secondary_y=True, range=[-0.75, 0.75], row=ro, col=co,
                                   dtick=0.25, tickfont=dict(size=9), tickformat=' >3%',
-                                  zeroline=True, zerolinewidth=2, zerolinecolor='LightBlue',
+                                  zeroline=True, zerolinewidth=2, zerolinecolor='LightBlue', showgrid=False,
                                   linecolor='LightBlue', gridcolor='LightBlue')
                 figm.update_xaxes(nticks=len(ddf) + 1, tickangle=0, showgrid=True, tickfont=dict(size=9))
 
-        figm.update_layout(title_text=f"Неделя {input3}, магазин {input1}",
-                           title_font_size=14,
-                           template='presentation',
-                           showlegend=False,
-                           height=700, width=800)
+        for ro in range(1, row_+1):
+            for co in range(2, col_+1, 3):
+                trace_bar_plan = go.Bar(name='План', y=[23], marker_color='darkgray', width=20)
+                trace_bar_fact = go.Bar(name='Факт', y=[20], marker_color='lightgreen', width=12)
+                trace_bar_diff = go.Bar(name='Факт-1', y=[10], marker_color='blue', width=6)
+
+                figm.add_traces([trace_bar_plan, trace_bar_fact, trace_bar_diff], rows=[ro]*3, cols=[co]*3)
+
+                figm.update_xaxes(row=ro, col=co, visible=False)
+                figm.update_yaxes(row=ro, col=co, visible=False)
+
+        figm.update_layout(title_text=f"Неделя {input3}, магазин {input1}", title_font_size=14,
+                           template='presentation', showlegend=False, height=700, width=1200)
 
         return figm
 
