@@ -8,8 +8,6 @@ from plotly.subplots import make_subplots
 import pandas as pd
 import datetime
 
-import plotly.figure_factory as ff
-
 
 def pars(x):
     try:
@@ -154,6 +152,8 @@ def update_chart(input1, input2, input3):
                                             'ТН', '%', '', 'Кред', '%', '', 'АДТ', '%', ''),
                              horizontal_spacing=0.035, vertical_spacing=0.1)
 
+        print(ddf.columns)
+
         for ro in range(1, row_+1):
             for co in range(1, col_+1, 3):
                 co2 = int((co-1)/3)
@@ -191,9 +191,13 @@ def update_chart(input1, input2, input3):
 
         for ro in range(1, row_+1):
             for co in range(2, col_+1, 3):
-                trace_bar_plan = go.Bar(name='План', y=[23], marker_color='darkgray', width=20)
-                trace_bar_fact = go.Bar(name='Факт', y=[20], marker_color='lightgreen', width=12)
-                trace_bar_diff = go.Bar(name='Факт-1', y=[10], marker_color='blue', width=6)
+                y1 = 1
+                kp = lst[ro-1][int((co-2)/3)]
+                y2 = load_cw(input1, kp)
+
+                trace_bar_plan = go.Bar(name='План', y=[y1], marker_color='darkgray', width=20)
+                trace_bar_fact = go.Bar(name='Факт', y=[y2], marker_color='lightgreen', width=12)
+                trace_bar_diff = go.Bar(name='Факт-1', y=[0], marker_color='blue', width=6)
 
                 figm.add_traces([trace_bar_plan, trace_bar_fact, trace_bar_diff], rows=[ro]*3, cols=[co]*3)
 
@@ -204,6 +208,39 @@ def update_chart(input1, input2, input3):
                            template='presentation', showlegend=False, height=700, width=1200)
 
         return figm
+
+
+def load_cw(store, kpi):
+    columns = ['store', 'day', 'r_p', 'r_f', 'im_f', 'uss_p', 'uss_f', 'vh_p', 'vh_f', 'prod_f', 'ch_f', 'konv_p',
+               'aks_p', 'aks_f', 'sch_p', 'sch_f', 'adt_p', 'adt_f', 'kred_p', 'kred_f', 'tn_p', 'tn_f']
+
+    dic_week = {}
+    sheets = ['curr_week', 'prev_week', 'prev_week_year']
+    names = ['df_cw', 'df_pw', 'df_py']
+
+    p1 = ['650/000', '640/000', '6502']
+    p2 = ['650', '640', '6502']
+    p3 = dict(zip(p1, p2))
+
+    lst = (('r_', 'vh_', 'konv_'),
+           ('uss_', 'aks_', 'sch_'),
+           ('tn_', 'kred_', 'adt_'))
+
+    lst_ = tuple([y for x in lst for y in x])
+
+    for i, n in enumerate(sheets):
+        m = names[i]
+        dic_week[m] = pd.read_excel('curr_week.xlsm', sheet_name=i, usecols=[x for x in range(22)], skiprows=4)
+        dic_week[m].columns = columns
+        dic_week[m] = dic_week[m][dic_week[m]['store'].str.endswith('Итог')].drop(columns='day')
+        dic_week[m].index = dic_week[m].store.str.split(':', expand=True)[0].str.strip().apply(lambda x: p3[x])
+        dic_week[m] = dic_week[m].drop(columns='store')
+        dic_week[m]['konv_f'] = dic_week[m]['ch_f'] / dic_week[m]['vh_f']
+
+        for k in lst_:
+            dic_week[m][k + 'fp'] = dic_week[m][k + 'f'] / dic_week[m][k + 'p']
+
+    return dic_week['df_py'].loc[store][kpi+'fp']
 
 
 if __name__ == '__main__':
