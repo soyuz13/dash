@@ -240,7 +240,7 @@ def load_cw(store, kpi):
         for k in lst_:
             dic_week[m][k + 'fp'] = dic_week[m][k + 'f'] / dic_week[m][k + 'p']
 
-    return dic_week['df_py'].loc[store][kpi+'fp']
+    return dic_week['df_cw'].loc[store][kpi+'fp']
 
 
 if __name__ == '__main__':

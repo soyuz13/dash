@@ -1,13 +1,35 @@
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import pandas as pd
 import datetime
-import json
+
+import shutil
+import os
+
+
+LOAD = False
+
+
+def load_files():
+    if os.name == 'posix':
+        path = '/Volumes/Public/Marchenko_vv/'
+    else:
+        path = r'\\192.168.181.63\Public\Marchenko_VV\''
+    print('start copy 1')
+    shutil.copy2(path + 'BI.xlsm', 'BI.xlsm')
+    print('finish 1. start copy 2')
+    shutil.copy2(path + 'curr_week.xlsm', 'curr_week.xlsm')
+    print('finish 2')
+
+
+if LOAD:
+    load_files()
 
 
 def pars(x):
@@ -18,14 +40,13 @@ def pars(x):
         return pd.NaT
 
 
-df2 = pd.read_excel(r'\\192.168.181.63\Public\Marchenko_VV\BI.xlsm', sheet_name='Лист1',
-                    usecols=[0] + [x for x in range(3, 24)],
-                    skiprows=4, index_col=1, parse_dates=[1], date_parser=pars)
+df2 = pd.read_excel('BI.xlsm', sheet_name='Лист1', usecols=[x for x in range(22)],
+                    skiprows=4, parse_dates=[1], date_parser=pars)
 
-df2.columns = ['store', 'r_p', 'r_f', 'im_f', 'uss_p', 'uss_f', 'vh_p', 'vh_f', 'prod_f', 'ch_f', 'konv_p',
+df2.columns = ['store', 'day', 'r_p', 'r_f', 'im_f', 'uss_p', 'uss_f', 'vh_p', 'vh_f', 'prod_f', 'ch_f', 'konv_p',
                'aks_p', 'aks_f', 'sch_p', 'sch_f', 'adt_p', 'adt_f', 'kred_p', 'kred_f', 'tn_p', 'tn_f']
 
-df2.index.name = 'day'
+df2.index = df2['day']
 df2 = df2[df2.index.notnull()]
 
 df2['konv_f'] = df2['ch_f']/df2['vh_f']
@@ -105,7 +126,6 @@ app.layout = html.Div([
 
 row_ = 3
 col_ = 9
-max_week = 0
 
 @app.callback(Output('input-year', 'options'),
               [Input('input-store', 'value')])
@@ -125,9 +145,6 @@ def update_week(val1, val2):
     if val1 and val2:
         y2 = dfd[val2][str(val1)]['week'].unique().tolist()
         y2.sort(reverse=True)
-
-        with open('tmp.json', 'w') as f:
-            f.write(json.dumps({'max_week': max(y2)}))
 
         return [{'label': x, 'value': x} for x in y2]
     else:
@@ -210,7 +227,7 @@ def update_chart(input1, input2, input3):
                     y2 = 0.7
 
                 trace_bar_plan = go.Bar(name='План', y=[y1], marker_color='darkgray', width=20)
-                trace_bar_fact = go.Bar(name='Факт', y=[y2], marker_color='lightgreen', width=12, text=y2, textfont=dict(size=16), textposition='inside', textangle=45)
+                trace_bar_fact = go.Bar(name='Факт', y=[y2], marker_color='lightgreen', width=12, text=12, textfont=dict(size=16), textposition='outside', textangle=0)
                 trace_bar_diff = go.Bar(name='Факт-1', y=[0], marker_color='blue', width=6)
 
                 figm.add_traces([trace_bar_plan, trace_bar_fact, trace_bar_diff], rows=[ro]*3, cols=[co]*3)
@@ -244,7 +261,7 @@ def load_cw(store, kpi):
 
     for i, n in enumerate(sheets):
         m = names[i]
-        dic_week[m] = pd.read_excel(r'\\192.168.181.63\Public\Marchenko_VV\curr_week.xlsm', sheet_name=i, usecols=[x for x in range(22)], skiprows=4)
+        dic_week[m] = pd.read_excel('curr_week.xlsm', sheet_name=i, usecols=[x for x in range(22)], skiprows=4)
         dic_week[m].columns = columns
         dic_week[m] = dic_week[m][dic_week[m]['store'].str.endswith('Итог')].drop(columns='day')
         dic_week[m].index = dic_week[m].store.str.split(':', expand=True)[0].str.strip().apply(lambda x: p3[x])
