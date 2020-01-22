@@ -5,7 +5,6 @@ from dash.dependencies import Input, Output
 
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import plotly.figure_factory as ff
 import pandas as pd
 import datetime
 
@@ -18,7 +17,7 @@ def pars(x):
         return pd.NaT
 
 
-df2 = pd.read_excel(r'\\192.168.181.63\Public\Marchenko_VV\BI.xlsm', sheet_name='Лист1',
+df2 = pd.read_excel('BI.xlsm', sheet_name='Лист1',
                     usecols=[0] + [x for x in range(3, 24)],
                     skiprows=4, index_col=1, parse_dates=[1], date_parser=pars)
 
@@ -103,6 +102,9 @@ app.layout = html.Div([
 
 ])
 
+row_ = 3
+col_ = 9
+
 
 @app.callback(Output('input-year', 'options'),
               [Input('input-store', 'value')])
@@ -139,40 +141,37 @@ def update_chart(input1, input2, input3):
         raise dash.exceptions.PreventUpdate
 
     else:
-        _row = 6
-        _col = 3
         ddf = dfd[input1][(dfd[input1].index.year == input2) & (dfd[input1]['week'] == input3)]
         xa = ddf.index.day
-        figm = make_subplots(rows=_row, cols=_col,
-                            column_width=[0.33, 0.33, 0.33],
-                            row_heights=[0.32, 0.04, 0.32, 0.04, 0.32, 0.04],
-                            specs=[[{"secondary_y": True}, {"secondary_y": True}, {"secondary_y": True}],
-                                   [{"type": 'indicator'}, {"type": 'indicator'}, {"type": 'indicator'}],
-                                   [{"secondary_y": True}, {"secondary_y": True}, {"secondary_y": True}],
-                                   [{"type": 'indicator'}, {"type": 'indicator'}, {"type": 'indicator'}],
-                                   [{"secondary_y": True}, {"secondary_y": True}, {"secondary_y": True}],
-                                   [{"type": 'indicator'}, {"type": 'indicator'}, {"type": 'indicator'}]],
-                            subplot_titles=("Реал", "Вход", "Конв", "", "", "", "Усс", "Акс", "СЧ", "", "", "", 'ТН', 'Кред', 'АДТ'),
-                            horizontal_spacing=0.08, vertical_spacing=0.04)
+        figm = make_subplots(rows=row_, cols=col_, column_width=[0.3, 0.025, 0.00, 0.3, 0.025, 0.00, 0.31, 0.025, 0.00],
+                             specs=[[{"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}],
+                                   [{"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}],
+                                   [{"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}]],
+                             subplot_titles=("Реал", '%', '', "Вход", '%', '', "Конв", '%', '',
+                                            "Усс", '%', '', "Акс", '%', '', "СЧ", '%', '',
+                                            'ТН', '%', '', 'Кред', '%', '', 'АДТ', '%', ''),
+                             horizontal_spacing=0.035, vertical_spacing=0.1)
 
-        # Рисуем графики с тремя осями на строках 1, 3, 5
-        for ro in range(1, _row+1, 2):
-            for co in range(1, _col+1):
-                ro2 = int((ro-1)/2)
-                p = lst[ro2][co-1] + 'p'
-                f = lst[ro2][co-1] + 'f'
-                d = lst[ro2][co-1] + 'diff%'
-                h = lst[ro2][co-1] + 'diff'
+        print(ddf.columns)
+
+        for ro in range(1, row_+1):
+            for co in range(1, col_+1, 3):
+                co2 = int((co-1)/3)
+                p = lst[ro-1][co2] + 'p'
+                f = lst[ro-1][co2] + 'f'
+                d = lst[ro-1][co2] + 'diff%'
+                h = lst[ro-1][co2] + 'diff'
 
                 m = max(ddf[p].max(), ddf[f].max()) * 1.1
-                figm.add_trace(go.Scatter(x=xa, y=ddf[p], name="План", mode='lines', marker_color='red'),
-                               row=ro, col=co)
-                figm.add_trace(go.Scatter(x=xa, y=ddf[f], name="Факт", mode='lines', marker_color='green'),
-                               row=ro, col=co)
-                figm.add_trace(go.Bar(x=xa, y=ddf[d], hovertext=ddf[h], hovertemplate='%{y:.2%}, %{hovertext:.3s}',
-                                      textposition='auto', text=ddf[d], texttemplate="%{y:%}", name="Откл.",
-                                      marker_color='LightBlue', opacity=0.5),
-                               secondary_y=True, row=ro, col=co)
+
+                trace_plan = go.Scatter(x=xa, y=ddf[p], name="План", mode='lines', marker_color='red')
+                trace_fact = go.Scatter(x=xa, y=ddf[f], name="Факт", mode='lines', marker_color='green')
+                trace_diff = go.Bar(x=xa, y=ddf[d], hovertext=ddf[h], hovertemplate='%{y:.2%}, %{hovertext:.3s}',
+                                    textposition='auto', text=ddf[d], texttemplate="%{y:%}", name="Откл.",
+                                    marker_color='LightBlue', opacity=0.5)
+
+                figm.add_traces([trace_plan, trace_fact, trace_diff], secondary_ys=[False, False, True],
+                                rows=[ro]*3, cols=[co]*3)
 
                 t_fmt = [['.4s', '.3s', '%'],
                          ['.3s', '%', '.2s'],
@@ -182,54 +181,66 @@ def update_chart(input1, input2, input3):
                           [10000, 0.02, 2000],
                           [100000, 0.04, 0.005]]
 
-                figm.update_yaxes(range=[0, m], tickformat=t_fmt[ro2][co-1], dtick=d_tick[ro2][co-1],
+                figm.update_yaxes(range=[0, m], tickformat=t_fmt[ro-1][co2], dtick=d_tick[ro-1][co2],
                                   row=ro, col=co, tickfont=dict(size=9))
                 figm.update_yaxes(secondary_y=True, range=[-0.75, 0.75], row=ro, col=co,
                                   dtick=0.25, tickfont=dict(size=9), tickformat=' >3%',
-                                  zeroline=True, zerolinewidth=2, zerolinecolor='LightBlue',
+                                  zeroline=True, zerolinewidth=2, zerolinecolor='LightBlue', showgrid=False,
                                   linecolor='LightBlue', gridcolor='LightBlue')
                 figm.update_xaxes(nticks=len(ddf) + 1, tickangle=0, showgrid=True, tickfont=dict(size=9))
 
+        for ro in range(1, row_+1):
+            for co in range(2, col_+1, 3):
+                y1 = 1
+                kp = lst[ro-1][int((co-2)/3)]
+                y2 = load_cw(input1, kp)
 
+                trace_bar_plan = go.Bar(name='План', y=[y1], marker_color='darkgray', width=20)
+                trace_bar_fact = go.Bar(name='Факт', y=[y2], marker_color='lightgreen', width=12)
+                trace_bar_diff = go.Bar(name='Факт-1', y=[0], marker_color='blue', width=6)
 
-        # Рисуем bullet-графики на строках 2, 4, 6
-        for ro in range(2, _row + 1, 2):
-            for co in range(1, _col + 1):
-                '''dat1 = (
-                    {"label": "Revenue", "sublabel": "US$, in thousands",
-                     "range": [150, 225, 300], "performance": [220, 270], "point": [250]},
-                    {"label": "Profit", "sublabel": "%", "range": [20, 25, 30],
-                     "performance": [21, 23], "point": [26]},
-                    {"label": "Order Size", "sublabel": "US$, average", "range": [350, 500, 600],
-                     "performance": [100, 320], "point": [550]},
-                    {"label": "New Customers", "sublabel": "count", "range": [1400, 2000, 2500],
-                     "performance": [1000, 1650], "point": [2100]},
-                    {"label": "Satisfaction", "sublabel": "out of 5", "range": [3.5, 4.25, 5],
-                     "performance": [3.2, 4.7], "point": [4.4]}
-                )
+                figm.add_traces([trace_bar_plan, trace_bar_fact, trace_bar_diff], rows=[ro]*3, cols=[co]*3)
 
-                fig = ff.create_bullet(dat1)
+                figm.update_xaxes(row=ro, col=co, visible=False)
+                figm.update_yaxes(row=ro, col=co, visible=False)
 
-                figm.add_trace(fig, row=ro, col=co)'''
-
-
-
-                figm.add_trace(go.Indicator(
-                    mode="number+gauge+delta",
-                    gauge={'shape': "bullet", 'axis': {'tickfont': {'size': 9}}},
-                    value=110,
-                    delta={'reference': 120},
-                    # domain={'x': [0, 0], 'y': [0, 1]}
-                ), row=ro, col=co)
-                # figm.update_xaxes(tickfont=dict(size=9))
-                # figm.update_layout(height=100)'''
-
-        figm.update_layout(title_text=f"Неделя {input3}, магазин {input1}",
-                           title_font_size=14, template="presentation", #template='presentation',
-                           margin=dict(r=0, t=100, b=30, l=50),
-                           showlegend=False, height=1000, width=1200)
+        figm.update_layout(title_text=f"Неделя {input3}, магазин {input1}", title_font_size=14,
+                           template='presentation', showlegend=False, height=700, width=1200)
 
         return figm
+
+
+def load_cw(store, kpi):
+    columns = ['store', 'day', 'r_p', 'r_f', 'im_f', 'uss_p', 'uss_f', 'vh_p', 'vh_f', 'prod_f', 'ch_f', 'konv_p',
+               'aks_p', 'aks_f', 'sch_p', 'sch_f', 'adt_p', 'adt_f', 'kred_p', 'kred_f', 'tn_p', 'tn_f']
+
+    dic_week = {}
+    sheets = ['curr_week', 'prev_week', 'prev_week_year']
+    names = ['df_cw', 'df_pw', 'df_py']
+
+    p1 = ['650/000', '640/000', '6502']
+    p2 = ['650', '640', '6502']
+    p3 = dict(zip(p1, p2))
+
+    lst = (('r_', 'vh_', 'konv_'),
+           ('uss_', 'aks_', 'sch_'),
+           ('tn_', 'kred_', 'adt_'))
+
+    lst_ = tuple([y for x in lst for y in x])
+
+    for i, n in enumerate(sheets):
+        m = names[i]
+        dic_week[m] = pd.read_excel('curr_week.xlsm', sheet_name=i, usecols=[x for x in range(22)], skiprows=4)
+        dic_week[m].columns = columns
+        dic_week[m] = dic_week[m][dic_week[m]['store'].str.endswith('Итог')].drop(columns='day')
+        dic_week[m].index = dic_week[m].store.str.split(':', expand=True)[0].str.strip().apply(lambda x: p3[x])
+        dic_week[m] = dic_week[m].drop(columns='store')
+        dic_week[m]['konv_f'] = dic_week[m]['ch_f'] / dic_week[m]['vh_f']
+
+        for k in lst_:
+            dic_week[m][k + 'fp'] = dic_week[m][k + 'f'] / dic_week[m][k + 'p']
+
+    return dic_week['df_py'].loc[store][kpi+'fp']
 
 
 if __name__ == '__main__':
