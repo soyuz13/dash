@@ -172,11 +172,11 @@ def update_chart(input1, input2, input3):
 
         ddf = dfd[input1][(dfd[input1].index.year == input2) & (dfd[input1]['week'] == input3)]
         xa = ddf.index.day
-        figm = make_subplots(rows=row_, cols=col_, column_width=[0.3, 0.03, 0.00, 0.3, 0.03, 0.00, 0.31, 0.03, 0.00],
+        figm = make_subplots(rows=row_, cols=col_, column_width=[0.28, 0.035, 0.00, 0.28, 0.035, 0.00, 0.28, 0.035, 0.00],
                              specs=[[{"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}],
                                    [{"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}],
                                    [{"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}]],
-                             subplot_titles=("Реал", '%', '', "Вход", '%', '', "Конв", '%', '',
+                             subplot_titles=("Реал", '%kggh', '', "Вход", '%', '', "Конв", '%', '',
                                             "Усс", '%', '', "Акс", '%', '', "СЧ", '%', '',
                                             'ТН', '%', '', 'Кред', '%', '', 'АДТ', '%', ''),
                              horizontal_spacing=0.035, vertical_spacing=0.1)
@@ -222,18 +222,19 @@ def update_chart(input1, input2, input3):
                 kp = lst[ro-1][int((co-2)/3)]
 
                 if current_week:
-                    y2 = load_cw(input1, kp)
+                    y3, y2, y1 = load_cw(input1, kp)
                 else:
                     y2 = 0.7
 
                 trace_bar_plan = go.Bar(name='План', y=[y1], marker_color='darkgray', width=20)
-                trace_bar_fact = go.Bar(name='Факт', y=[y2], marker_color='lightgreen', width=12, text=12, textfont=dict(size=16), textposition='outside', textangle=0)
-                trace_bar_diff = go.Bar(name='Факт-1', y=[0], marker_color='blue', width=6)
+                trace_bar_fact = go.Bar(name='Факт', y=[y2], marker_color='lightgreen', width=12)
+                trace_bar_diff = go.Bar(name='Факт-1', y=[y3], marker_color='orangered', width=6)
 
                 figm.add_traces([trace_bar_plan, trace_bar_fact, trace_bar_diff], rows=[ro]*3, cols=[co]*3)
 
                 figm.update_xaxes(row=ro, col=co, visible=False)
                 figm.update_yaxes(row=ro, col=co, visible=False)
+
 
         figm.update_layout(title_text=f"Неделя {input3}, магазин {input1}", title_font_size=14,
                            template='presentation', showlegend=False, height=700, width=1200)
@@ -271,7 +272,7 @@ def load_cw(store, kpi):
         for k in lst_:
             dic_week[m][k + 'fp'] = dic_week[m][k + 'f'] / dic_week[m][k + 'p']
 
-    return dic_week['df_cw'].loc[store][kpi+'fp']
+    return dic_week['df_cw'].loc[store][kpi+'fp'], dic_week['df_pw'].loc[store][kpi+'fp'], dic_week['df_py'].loc[store][kpi+'fp']
 
 
 if __name__ == '__main__':
