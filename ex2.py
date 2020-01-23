@@ -41,11 +41,11 @@ def pars(x):
         return pd.NaT
 
 
-df2 = pd.read_excel('BI.xlsm', sheet_name='Лист1', usecols=[x for x in range(22)],
+df2 = pd.read_excel('BI.xlsm', sheet_name='Лист1', usecols=[x for x in range(23)],
                     skiprows=4, parse_dates=[1], date_parser=pars)
 
 df2.columns = ['store', 'day', 'r_p', 'r_f', 'im_f', 'uss_p', 'uss_f', 'vh_p', 'vh_f', 'prod_f', 'ch_f', 'konv_p',
-               'aks_p', 'aks_f', 'sch_p', 'sch_f', 'adt_p', 'adt_f', 'kred_p', 'kred_f', 'tn_p', 'tn_f']
+               'aks_p', 'aks_f', 'sch_p', 'sch_f', 'adt_p', 'adt_f', 'kred_p', 'kred_f', 'tn_p', 'tn_f', 'empl_f']
 
 df2.index = df2['day']
 df2 = df2[df2.index.notnull()]
@@ -172,7 +172,14 @@ def update_chart(input1, input2, input3):
             current_week = False
 
         ddf = dfd[input1][(dfd[input1].index.year == input2) & (dfd[input1]['week'] == input3)]
-        xa = ddf.index.day
+        xa = ddf.index.day.tolist()
+        prod_f = ddf['empl_f']
+        prod_f_7 = ddf['empl_f_D-7']
+        x_txt = []
+        for i, k in enumerate(xa):
+            x_txt.append(str(k) + '<br>' + str(int(prod_f[i])) + '/' + str(int(prod_f_7[i])))
+        xa = x_txt
+
         figm = make_subplots(rows=row_, cols=col_, column_width=[0.28, 0.04, 0.28, 0.04, 0.28, 0.04],
                              specs=[[{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}],
                                    [{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}],
@@ -243,6 +250,7 @@ def update_chart(input1, input2, input3):
                         [13, 15, 17]]
                 pos = map_[ro-1][int(co/2)-1]
                 figm['layout']['annotations'][pos]['text'] = f'{y3*100:.1f}%'
+                (figm['layout']['annotations'][pos]['bgcolor']) = 'rgb(255, 100, 0, 0)'
 
         figm.update_layout(title_text=f"Неделя {input3}, магазин {input1}", title_font_size=14,
                            template='presentation', showlegend=False, height=700, width=1200)
@@ -253,7 +261,7 @@ def update_chart(input1, input2, input3):
 
 def load_cw(store, kpi):
     columns = ['store', 'day', 'r_p', 'r_f', 'im_f', 'uss_p', 'uss_f', 'vh_p', 'vh_f', 'prod_f', 'ch_f', 'konv_p',
-               'aks_p', 'aks_f', 'sch_p', 'sch_f', 'adt_p', 'adt_f', 'kred_p', 'kred_f', 'tn_p', 'tn_f']
+               'aks_p', 'aks_f', 'sch_p', 'sch_f', 'adt_p', 'adt_f', 'kred_p', 'kred_f', 'tn_p', 'tn_f', 'empl_f']
 
     dic_week = {}
     sheets = ['curr_week', 'prev_week', 'prev_week_year']
@@ -271,7 +279,7 @@ def load_cw(store, kpi):
 
     for i, n in enumerate(sheets):
         m = names[i]
-        dic_week[m] = pd.read_excel('curr_week.xlsm', sheet_name=i, usecols=[x for x in range(22)], skiprows=4)
+        dic_week[m] = pd.read_excel('curr_week.xlsm', sheet_name=i, usecols=[x for x in range(23)], skiprows=4)
         dic_week[m].columns = columns
         dic_week[m] = dic_week[m][dic_week[m]['store'].str.endswith('Итог')].drop(columns='day')
         dic_week[m].index = dic_week[m].store.str.split(':', expand=True)[0].str.strip().apply(lambda x: p3[x])
