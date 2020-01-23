@@ -126,7 +126,7 @@ app.layout = html.Div([
 ])
 
 row_ = 3
-col_ = 9
+col_ = 6
 
 @app.callback(Output('input-year', 'options'),
               [Input('input-store', 'value')])
@@ -173,18 +173,18 @@ def update_chart(input1, input2, input3):
 
         ddf = dfd[input1][(dfd[input1].index.year == input2) & (dfd[input1]['week'] == input3)]
         xa = ddf.index.day
-        figm = make_subplots(rows=row_, cols=col_, column_width=[0.28, 0.035, 0.00, 0.28, 0.035, 0.00, 0.28, 0.035, 0.00],
-                             specs=[[{"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}],
-                                   [{"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}],
-                                   [{"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}, {"secondary_y": True}, {}, {}]],
-                             subplot_titles=("Реал", '%kggh', '', "Вход", '%', '', "Конв", '%', '',
-                                            "Усс", '%', '', "Акс", '%', '', "СЧ", '%', '',
-                                            'ТН', '%', '', 'Кред', '%', '', 'АДТ', '%', ''),
+        figm = make_subplots(rows=row_, cols=col_, column_width=[0.28, 0.04, 0.28, 0.04, 0.28, 0.04],
+                             specs=[[{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}],
+                                   [{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}],
+                                   [{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}]],
+                             subplot_titles=("Реал", '1', "Вход", '2',  "Конв", '3',
+                                            "Усс", '4', "Акс", '5', "СЧ", '6',
+                                            'ТН', '7', 'Кред', '8', 'АДТ', '9'),
                              horizontal_spacing=0.035, vertical_spacing=0.1)
 
         for ro in range(1, row_+1):
-            for co in range(1, col_+1, 3):
-                co2 = int((co-1)/3)
+            for co in range(1, col_+1, 2):
+                co2 = int((co-1)/2)
                 p = lst[ro-1][co2] + 'p'
                 f = lst[ro-1][co2] + 'f'
                 d = lst[ro-1][co2] + 'diff%'
@@ -218,9 +218,9 @@ def update_chart(input1, input2, input3):
                 figm.update_xaxes(nticks=len(ddf) + 1, tickangle=0, showgrid=True, tickfont=dict(size=9))
 
         for ro in range(1, row_+1):
-            for co in range(2, col_+1, 3):
+            for co in range(2, col_+1, 2):
                 y1 = 1
-                kp = lst[ro-1][int((co-2)/3)]
+                kp = lst[ro-1][int((co-2)/2)]
 
                 if current_week:
                     y3, y2, y1 = load_cw(input1, kp)
@@ -238,10 +238,16 @@ def update_chart(input1, input2, input3):
                 figm.update_xaxes(row=ro, col=co, visible=False)
                 figm.update_yaxes(row=ro, col=co, visible=False)
 
+                map_ = [[1, 3, 5],
+                        [7, 9, 11],
+                        [13, 15, 17]]
+                pos = map_[ro-1][int(co/2)-1]
+                figm['layout']['annotations'][pos]['text'] = f'{y3*100:.1f}%'
 
         figm.update_layout(title_text=f"Неделя {input3}, магазин {input1}", title_font_size=14,
                            template='presentation', showlegend=False, height=700, width=1200)
 
+        #print(figm)
         return figm
 
 
