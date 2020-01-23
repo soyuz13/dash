@@ -20,7 +20,8 @@ def load_files():
     if os.name == 'posix':
         path = '/Volumes/Public/Marchenko_vv/'
     else:
-        path = r'\\192.168.181.63\Public\Marchenko_VV\''
+        path = r'\192.168.181.63\Public\Marchenko_VV\''
+
     print('start copy 1')
     shutil.copy2(path + 'BI.xlsm', 'BI.xlsm')
     print('finish 1. start copy 2')
@@ -225,10 +226,12 @@ def update_chart(input1, input2, input3):
                     y3, y2, y1 = load_cw(input1, kp)
                 else:
                     y2 = 0.7
+                    y1 = 0.6
+                    y3 = 0.8
 
-                trace_bar_plan = go.Bar(name='План', y=[y1], marker_color='darkgray', width=20)
-                trace_bar_fact = go.Bar(name='Факт', y=[y2], marker_color='lightgreen', width=12)
-                trace_bar_diff = go.Bar(name='Факт-1', y=[y3], marker_color='orangered', width=6)
+                trace_bar_plan = go.Bar(name='План', y=[y1], width=20, marker_color='#7FFF00') # , marker_color='lightgray'
+                trace_bar_fact = go.Bar(name='Факт', y=[y2], width=12, marker_color='#FF8800') # , marker_color='papayawhip'
+                trace_bar_diff = go.Bar(name='Факт-1', y=[y3], width=6, marker_color='green') # , marker_color='green'
 
                 figm.add_traces([trace_bar_plan, trace_bar_fact, trace_bar_diff], rows=[ro]*3, cols=[co]*3)
 
