@@ -1,86 +1,23 @@
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 
-import pandas as pd
 import datetime
-
-import shutil
-import os
+import loader
 
 
-LOAD = False
+names = ('650/000', '640/000', '6502')
+getdata = loader.LoadBIData()
 
-
-def load_files():
-    if os.name == 'posix':
-        path = '/Volumes/Public/Marchenko_vv/'
-    else:
-        path = r'\192.168.181.63\Public\Marchenko_VV\''
-
-    print('start copy 1')
-    shutil.copy2(path + 'BI.xlsm', 'BI.xlsm')
-    print('finish 1. start copy 2')
-    shutil.copy2(path + 'curr_week.xlsm', 'curr_week.xlsm')
-    print('finish 2')
-
-
-if LOAD:
-    load_files()
-
-
-def pars(x):
-    try:
-        g = [int(m) for m in x.split('.')]
-        return datetime.date(*g[::-1])
-    except:
-        return pd.NaT
-
-
-df2 = pd.read_excel('BI.xlsm', sheet_name='Лист1', usecols=[x for x in range(23)],
-                    skiprows=4, parse_dates=[1], date_parser=pars)
-
-df2.columns = ['store', 'day', 'r_p', 'r_f', 'im_f', 'uss_p', 'uss_f', 'vh_p', 'vh_f', 'prod_f', 'ch_f', 'konv_p',
-               'aks_p', 'aks_f', 'sch_p', 'sch_f', 'adt_p', 'adt_f', 'kred_p', 'kred_f', 'tn_p', 'tn_f', 'empl_f']
-
-df2.index = df2['day']
-df2 = df2[df2.index.notnull()]
-
-df2['konv_f'] = df2['ch_f']/df2['vh_f']
-df2['week'] = df2.index.weekofyear
-
-codes1 = ['650/', '640/', '6502']
-codes2 = codes1[:]
-codes3 = codes1[:]
-names = ('650', '640', '6502')
-
-for i, j in enumerate(codes1):
-    codes1[i] = df2[df2.store.str.startswith(j)].drop(columns='store')
-    codes2[i] = codes1[i].resample('w', closed='right').sum()
-    # codes2[i]['week'] = codes2[i].index.weekofyear
-    codes3[i] = codes1[i].resample('M', closed='right').sum()
-
-dfd = dict(zip(names, codes1))  # df по дням
-dfw = dict(zip(names, codes2))  # df по неделям
-dfm = dict(zip(names, codes3))  # df по месяцам
 
 lst = (('r_', 'vh_', 'konv_'),
        ('uss_', 'aks_', 'sch_'),
        ('tn_', 'kred_', 'adt_'))
 
 lst_ = tuple([y for x in lst for y in x])
-
-for k in dfd:
-    for i in dfd[k].columns:
-        dfd[k][i+'_D-7'] = dfd[k][i].shift(7)
-    for i in lst_:
-        dfd[k][i+'fp'] = dfd[k][i+'f']/dfd[k][i+'p']
-        dfd[k][i+'diff%'] = (dfd[k][i+'f']-dfd[k][i+'f_D-7'])/dfd[k][i+'f_D-7']
-        dfd[k][i+'diff'] = dfd[k][i+'f']-dfd[k][i+'f_D-7']
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -128,11 +65,12 @@ app.layout = html.Div([
 row_ = 3
 col_ = 6
 
+
 @app.callback(Output('input-year', 'options'),
               [Input('input-store', 'value')])
 def update_year(value):
     if value:
-        y1 = dfd[value].index.year.unique().tolist()
+        y1 = [2020, 2019]  # dfd[value].index.year.unique().tolist()
         y1.sort(reverse=True)
         return [{'label': x, 'value': x} for x in y1]
     else:
@@ -144,7 +82,7 @@ def update_year(value):
                Input('input-store', 'value')])
 def update_week(val1, val2):
     if val1 and val2:
-        y2 = dfd[val2][str(val1)]['week'].unique().tolist()
+        y2 = [4, 3, 2, 1]  # dfd[val2][str(val1)]['week'].unique().tolist()
         y2.sort(reverse=True)
 
         return [{'label': x, 'value': x} for x in y2]
@@ -154,27 +92,23 @@ def update_week(val1, val2):
 
 @app.callback(Output('chart', 'figure'),
               [Input('input-store', 'value'), Input('input-year', 'value'), Input('input-week', 'value')])
-def update_chart(input1, input2, input3):
-    if not (input3 and input2 and input1):
+def update_chart(inp_store, inp_year, inp_week):
+    if not (inp_week and inp_year and inp_store):
         figm = go.Figure()
         return figm
         raise dash.exceptions.PreventUpdate
 
     else:
-
-        d = datetime.datetime.now()
-        c_year = d.year
-        c_week = int(d.strftime('%V'))
-
-        if c_year == input2 and c_week == input3:
+        current_week = False
+        dtn = datetime.datetime.now()
+        if (dtn.year, int(dtn.strftime('%V'))) == (inp_year, inp_week):
             current_week = True
-        else:
-            current_week = False
 
-        ddf = dfd[input1][(dfd[input1].index.year == input2) & (dfd[input1]['week'] == input3)]
-        xa = ddf.index.day.tolist()
-        prod_f = ddf['empl_f']
-        prod_f_7 = ddf['empl_f_D-7']
+        ddf2 = getdata.get_curr_week(inp_store, results=False)
+        xa = ddf2[0].index.day.tolist()
+        prod_f = ddf2[0]['empl_f']
+        prod_f_7 = ddf2[1]['empl_f']
+
         x_txt = []
         for i, k in enumerate(xa):
             x_txt.append(str(k) + '<br>' + str(int(prod_f[i])) + '/' + str(int(prod_f_7[i])))
@@ -184,9 +118,9 @@ def update_chart(input1, input2, input3):
                              specs=[[{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}],
                                    [{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}],
                                    [{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}]],
-                             subplot_titles=("Реал", '1', "Вход", '2',  "Конв", '3',
-                                            "Усс", '4', "Акс", '5', "СЧ", '6',
-                                            'ТН', '7', 'Кред', '8', 'АДТ', '9'),
+                             subplot_titles=('Реал', '1', 'Вход', '2',  'Конв', '3',
+                                             'Усс', '4', 'Акс', '5', 'СЧ', '6',
+                                             'ТН', '7', 'Кред', '8', 'АДТ', '9'),
                              horizontal_spacing=0.035, vertical_spacing=0.1)
 
         for ro in range(1, row_+1):
@@ -194,15 +128,17 @@ def update_chart(input1, input2, input3):
                 co2 = int((co-1)/2)
                 p = lst[ro-1][co2] + 'p'
                 f = lst[ro-1][co2] + 'f'
-                d = lst[ro-1][co2] + 'diff%'
-                h = lst[ro-1][co2] + 'diff'
 
-                m = max(ddf[p].max(), ddf[f].max()) * 1.1
+                ddf2[1].index = ddf2[0][f].index
+                d = (ddf2[0][f] - ddf2[1][f])/ddf2[1][f]
+                h = ddf2[0][f] - ddf2[1][f]
 
-                trace_plan = go.Scatter(x=xa, y=ddf[p], name="План", mode='lines', marker_color='red')
-                trace_fact = go.Scatter(x=xa, y=ddf[f], name="Факт", mode='lines', marker_color='green')
-                trace_diff = go.Bar(x=xa, y=ddf[d], hovertext=ddf[h], hovertemplate='%{y:.2%}, %{hovertext:.3s}',
-                                    textposition='auto', text=ddf[d], texttemplate="%{y:%}", name="Откл.",
+                m = max(ddf2[0][p].max(), ddf2[0][f].max()) * 1.1
+
+                trace_plan = go.Scatter(x=xa, y=ddf2[0][p], name="План", mode='lines', marker_color='red')
+                trace_fact = go.Scatter(x=xa, y=ddf2[0][f], name="Факт", mode='lines', marker_color='green')
+                trace_diff = go.Bar(x=xa, y=d, hovertext=h, hovertemplate='%{y:.2%}, %{hovertext:.3s}',
+                                    textposition='auto', text=d, texttemplate="%{y:%}", name="Откл.",
                                     marker_color='LightBlue', opacity=0.5)
 
                 figm.add_traces([trace_plan, trace_fact, trace_diff], secondary_ys=[False, False, True],
@@ -222,23 +158,23 @@ def update_chart(input1, input2, input3):
                                   dtick=0.25, tickfont=dict(size=9), tickformat=' >3%',
                                   zeroline=True, zerolinewidth=2, zerolinecolor='LightBlue', showgrid=False,
                                   linecolor='LightBlue', gridcolor='LightBlue')
-                figm.update_xaxes(nticks=len(ddf) + 1, tickangle=0, showgrid=True, tickfont=dict(size=9))
+                figm.update_xaxes(nticks=len(ddf2[0]) + 1, tickangle=0, showgrid=True, tickfont=dict(size=9))
 
         for ro in range(1, row_+1):
             for co in range(2, col_+1, 2):
-                y1 = 1
                 kp = lst[ro-1][int((co-2)/2)]
 
                 if current_week:
-                    y3, y2, y1 = load_cw(input1, kp)
+                    y1, y2, y3 = getdata.get_curr_week(inp_store, results=True, kpi=kp+'fp')
+
                 else:
                     y2 = 0.7
                     y1 = 0.6
                     y3 = 0.8
 
-                trace_bar_plan = go.Bar(name='План', y=[y1], width=20, marker_color='#7FFF00') # , marker_color='lightgray'
+                trace_bar_plan = go.Bar(name='План', y=[y3], width=20, marker_color='#7FFF00') # , marker_color='lightgray'
                 trace_bar_fact = go.Bar(name='Факт', y=[y2], width=12, marker_color='#FF8800') # , marker_color='papayawhip'
-                trace_bar_diff = go.Bar(name='Факт-1', y=[y3], width=6, marker_color='green') # , marker_color='green'
+                trace_bar_diff = go.Bar(name='Факт-1', y=[y1], width=6, marker_color='green') # , marker_color='green'
 
                 figm.add_traces([trace_bar_plan, trace_bar_fact, trace_bar_diff], rows=[ro]*3, cols=[co]*3)
 
@@ -249,47 +185,14 @@ def update_chart(input1, input2, input3):
                         [7, 9, 11],
                         [13, 15, 17]]
                 pos = map_[ro-1][int(co/2)-1]
-                figm['layout']['annotations'][pos]['text'] = f'{y3*100:.1f}%'
-                (figm['layout']['annotations'][pos]['bgcolor']) = 'rgb(255, 100, 0, 0)'
+                figm['layout']['annotations'][pos]['text'] = f'{y1*100:.1f}%'
+                figm['layout']['annotations'][pos]['bgcolor'] = 'rgb(255, 100, 0, 0)'
 
-        figm.update_layout(title_text=f"Неделя {input3}, магазин {input1}", title_font_size=14,
+        figm.update_layout(title_text=f"Неделя {inp_week}, магазин {inp_store}", title_font_size=14,
                            template='presentation', showlegend=False, height=700, width=1200)
 
         #print(figm)
         return figm
-
-
-def load_cw(store, kpi):
-    columns = ['store', 'day', 'r_p', 'r_f', 'im_f', 'uss_p', 'uss_f', 'vh_p', 'vh_f', 'prod_f', 'ch_f', 'konv_p',
-               'aks_p', 'aks_f', 'sch_p', 'sch_f', 'adt_p', 'adt_f', 'kred_p', 'kred_f', 'tn_p', 'tn_f', 'empl_f']
-
-    dic_week = {}
-    sheets = ['curr_week', 'prev_week', 'prev_week_year']
-    names = ['df_cw', 'df_pw', 'df_py']
-
-    p1 = ['650/000', '640/000', '6502']
-    p2 = ['650', '640', '6502']
-    p3 = dict(zip(p1, p2))
-
-    lst = (('r_', 'vh_', 'konv_'),
-           ('uss_', 'aks_', 'sch_'),
-           ('tn_', 'kred_', 'adt_'))
-
-    lst_ = tuple([y for x in lst for y in x])
-
-    for i, n in enumerate(sheets):
-        m = names[i]
-        dic_week[m] = pd.read_excel('curr_week.xlsm', sheet_name=i, usecols=[x for x in range(23)], skiprows=4)
-        dic_week[m].columns = columns
-        dic_week[m] = dic_week[m][dic_week[m]['store'].str.endswith('Итог')].drop(columns='day')
-        dic_week[m].index = dic_week[m].store.str.split(':', expand=True)[0].str.strip().apply(lambda x: p3[x])
-        dic_week[m] = dic_week[m].drop(columns='store')
-        dic_week[m]['konv_f'] = dic_week[m]['ch_f'] / dic_week[m]['vh_f']
-
-        for k in lst_:
-            dic_week[m][k + 'fp'] = dic_week[m][k + 'f'] / dic_week[m][k + 'p']
-
-    return dic_week['df_cw'].loc[store][kpi+'fp'], dic_week['df_pw'].loc[store][kpi+'fp'], dic_week['df_py'].loc[store][kpi+'fp']
 
 
 if __name__ == '__main__':

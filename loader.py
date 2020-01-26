@@ -63,9 +63,9 @@ class LoadBIData:
             if store:
                 if results:
                     if kpi:
-                        df = df[df.store.str.startswith(store) & df.store.str.endswith('Итог')][kpi]
+                        df = df[df.store.str.startswith(store) & df.store.str.endswith('Итог')].loc['NaT'][kpi]
                     else:
-                        df = df[df.store.str.startswith(store) & df.store.str.endswith('Итог')]
+                        df = df[df.store.str.startswith(store) & df.store.str.endswith('Итог')].loc['NaT']
                 else:
                     if kpi:
                         df = df[df.store.str.startswith(store) & ~df.store.str.endswith('Итог')][kpi]
@@ -87,10 +87,11 @@ class LoadBIData:
         pass
 
 
-a = LoadBIData()
+'''a = LoadBIData()
 # a.load_files(['curr_week.xlsm', 'curr_month.xlsm'])
 
-print(a.get_curr_week('650/000', True, 'konv_fp'))
+print(a.get_curr_week('650/000', False))'''
+
 
 
 
