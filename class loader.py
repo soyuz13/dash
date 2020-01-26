@@ -54,7 +54,7 @@ class LoadBIData:
             shutil.copy2(os.path.join(self.path, i), i)
             print('finish')
 
-    def get_curr_week(self, store=None, results=True):
+    def get_curr_week(self, store=None, results=True, kpi=False):
 
         lst = []
         sheets = ['curr_week', 'prev_week', 'prev_week_year']
@@ -62,9 +62,15 @@ class LoadBIData:
             df = self._create_df(self._files['curr_week'], i)
             if store:
                 if results:
-                    df = df[df.store.str.startswith(store) & df.store.str.endswith('Итог')]
+                    if kpi:
+                        df = df[df.store.str.startswith(store) & df.store.str.endswith('Итог')][kpi]
+                    else:
+                        df = df[df.store.str.startswith(store) & df.store.str.endswith('Итог')]
                 else:
-                    df = df[df.store.str.startswith(store) & ~df.store.str.endswith('Итог')]
+                    if kpi:
+                        df = df[df.store.str.startswith(store) & ~df.store.str.endswith('Итог')][kpi]
+                    else:
+                        df = df[df.store.str.startswith(store) & ~df.store.str.endswith('Итог')]
             else:
                 df = df[df.store == 'Общий итог']
             lst.append(df)
@@ -84,7 +90,8 @@ class LoadBIData:
 a = LoadBIData()
 # a.load_files(['curr_week.xlsm', 'curr_month.xlsm'])
 
-print(a.get_curr_week('650/000', False))
+print(a.get_curr_week('650/000', True, 'konv_fp'))
+
 
 
 
