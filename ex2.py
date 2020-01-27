@@ -103,21 +103,23 @@ def update_chart(inp_store, inp_year, inp_week):
         dtn = datetime.datetime.now()
         if (dtn.year, int(dtn.strftime('%V'))) == (inp_year, inp_week):
             current_week = True
+        current_week = True
 
-        ddf2 = getdata.get_curr_week(inp_store, results=False)
-        xa = ddf2[0].index.day.tolist()
-        prod_f = ddf2[0]['empl_f']
-        prod_f_7 = ddf2[1]['empl_f']
+        df_cw, df_pw, df_py = getdata.get_curr_week(inp_store, results=False)
+
+        lbl_x_axis = df_cw.index.day.tolist()
+        empl_cw = df_cw['empl_f']
+        empl_pw = df_pw['empl_f']
 
         x_txt = []
-        for i, k in enumerate(xa):
-            x_txt.append(str(k) + '<br>' + str(int(prod_f[i])) + '/' + str(int(prod_f_7[i])))
-        xa = x_txt
+        for i, k in enumerate(lbl_x_axis):
+            x_txt.append(str(k) + '<br>' + str(int(empl_cw[i])) + '/' + str(int(empl_pw[i])))
+        lbl_x_axis = x_txt
 
         figm = make_subplots(rows=row_, cols=col_, column_width=[0.28, 0.04, 0.28, 0.04, 0.28, 0.04],
                              specs=[[{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}],
-                                   [{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}],
-                                   [{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}]],
+                                    [{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}],
+                                    [{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}]],
                              subplot_titles=('Реал', '1', 'Вход', '2',  'Конв', '3',
                                              'Усс', '4', 'Акс', '5', 'СЧ', '6',
                                              'ТН', '7', 'Кред', '8', 'АДТ', '9'),
@@ -129,15 +131,15 @@ def update_chart(inp_store, inp_year, inp_week):
                 p = lst[ro-1][co2] + 'p'
                 f = lst[ro-1][co2] + 'f'
 
-                ddf2[1].index = ddf2[0][f].index
-                d = (ddf2[0][f] - ddf2[1][f])/ddf2[1][f]
-                h = ddf2[0][f] - ddf2[1][f]
+                df_pw.index = df_cw[f].index
+                d = (df_cw[f] - df_pw[f])/df_pw[f]
+                h = df_cw[f] - df_pw[f]
 
-                m = max(ddf2[0][p].max(), ddf2[0][f].max()) * 1.1
+                m = max(df_cw[p].max(), df_cw[f].max()) * 1.1
 
-                trace_plan = go.Scatter(x=xa, y=ddf2[0][p], name="План", mode='lines', marker_color='red')
-                trace_fact = go.Scatter(x=xa, y=ddf2[0][f], name="Факт", mode='lines', marker_color='green')
-                trace_diff = go.Bar(x=xa, y=d, hovertext=h, hovertemplate='%{y:.2%}, %{hovertext:.3s}',
+                trace_plan = go.Scatter(x=lbl_x_axis, y=df_cw[p], name="План", mode='lines', marker_color='red')
+                trace_fact = go.Scatter(x=lbl_x_axis, y=df_cw[f], name="Факт", mode='lines', marker_color='green')
+                trace_diff = go.Bar(x=lbl_x_axis, y=d, hovertext=h, hovertemplate='%{y:.2%}, %{hovertext:.3s}',
                                     textposition='auto', text=d, texttemplate="%{y:%}", name="Откл.",
                                     marker_color='LightBlue', opacity=0.5)
 
@@ -158,25 +160,26 @@ def update_chart(inp_store, inp_year, inp_week):
                                   dtick=0.25, tickfont=dict(size=9), tickformat=' >3%',
                                   zeroline=True, zerolinewidth=2, zerolinecolor='LightBlue', showgrid=False,
                                   linecolor='LightBlue', gridcolor='LightBlue')
-                figm.update_xaxes(nticks=len(ddf2[0]) + 1, tickangle=0, showgrid=True, tickfont=dict(size=9))
+                figm.update_xaxes(nticks=len(df_cw) + 1, tickangle=0, showgrid=True, tickfont=dict(size=9))
 
         for ro in range(1, row_+1):
             for co in range(2, col_+1, 2):
                 kp = lst[ro-1][int((co-2)/2)]
 
                 if current_week:
-                    y1, y2, y3 = getdata.get_curr_week(inp_store, results=True, kpi=kp+'fp')
+                    y_cw, y_pw, y_py = getdata.get_curr_week(inp_store, results=True, kpi=kp+'f')
+                    y4 = getdata.get_curr_week(inp_store, results=True, kpi=kp+'fp')[0]
 
                 else:
-                    y2 = 0.7
-                    y1 = 0.6
-                    y3 = 0.8
+                    y_pw = 0.7
+                    y_cw = 0.6
+                    y_py = 0.8
 
-                trace_bar_plan = go.Bar(name='План', y=[y3], width=20, marker_color='#7FFF00') # , marker_color='lightgray'
-                trace_bar_fact = go.Bar(name='Факт', y=[y2], width=12, marker_color='#FF8800') # , marker_color='papayawhip'
-                trace_bar_diff = go.Bar(name='Факт-1', y=[y1], width=6, marker_color='green') # , marker_color='green'
+                # trace_bar_plan = go.Bar(name='План', y=[0], width=0, marker_color='#7FFF00') # , marker_color='lightgray'
+                trace_bar_prev = go.Bar(name='Факт', y=[y_pw], width=12, marker_color='#FF8800') # , marker_color='papayawhip'
+                trace_bar_curr = go.Bar(name='Факт-1', y=[y_cw], width=6, marker_color='green') # , marker_color='green'
 
-                figm.add_traces([trace_bar_plan, trace_bar_fact, trace_bar_diff], rows=[ro]*3, cols=[co]*3)
+                figm.add_traces([trace_bar_prev, trace_bar_curr], rows=[ro]*2, cols=[co]*2)
 
                 figm.update_xaxes(row=ro, col=co, visible=False)
                 figm.update_yaxes(row=ro, col=co, visible=False)
@@ -185,7 +188,7 @@ def update_chart(inp_store, inp_year, inp_week):
                         [7, 9, 11],
                         [13, 15, 17]]
                 pos = map_[ro-1][int(co/2)-1]
-                figm['layout']['annotations'][pos]['text'] = f'{y1*100:.1f}%'
+                figm['layout']['annotations'][pos]['text'] = f'{y4*100:.1f}%'
                 figm['layout']['annotations'][pos]['bgcolor'] = 'rgb(255, 100, 0, 0)'
 
         figm.update_layout(title_text=f"Неделя {inp_week}, магазин {inp_store}", title_font_size=14,

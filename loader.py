@@ -46,7 +46,6 @@ class LoadBIData:
                     pass
         return df
 
-
     def load_files(self, ls=None):
         lst = ls if ls else self._files
         for i in lst:
@@ -55,7 +54,6 @@ class LoadBIData:
             print('finish')
 
     def get_curr_week(self, store=None, results=True, kpi=False):
-
         lst = []
         sheets = ['curr_week', 'prev_week', 'prev_week_year']
         for i in sheets:
@@ -76,7 +74,6 @@ class LoadBIData:
             lst.append(df)
         return lst
 
-
     def get_curr_month(self):
         pass
 
@@ -84,6 +81,12 @@ class LoadBIData:
         pass
 
     def get_week(self):
+
+
+
+
+
+
         pass
 
 
