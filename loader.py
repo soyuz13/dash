@@ -14,7 +14,7 @@ class LoadBIData:
 
         self._files = {'curr_week': 'curr_week.xlsm',
                        'curr_month': 'curr_month.xlsm',
-                       'week': 'weeks.xlsm',
+                       'weeks': 'weeks.xlsm',
                        'months': 'months.xlsm'}
 
         if os.name == 'posix':
@@ -50,7 +50,7 @@ class LoadBIData:
         lst = ls if ls else self._files
         for i in lst:
             print('start copy ' + i)
-            shutil.copy2(os.path.join(self.path, i), i)
+            shutil.copy2(os.path.join(self.path, lst[i]), lst[i])
             print('finish')
 
     def get_curr_week(self, store=None, results=True, kpi=False):
@@ -80,7 +80,53 @@ class LoadBIData:
     def get_month(self):
         pass
 
-    def get_week(self):
+    def get_week(self, store=None, results=True, kpi=False):
+        sheet = 'weeks'
+
+
+
+
+
+
+
+
+        df2 = pd.read_excel('BI.xlsm', sheet_name='Лист1', usecols=[x for x in range(23)],
+                            skiprows=4, parse_dates=[1], date_parser=pars)
+
+        df2.columns = ['store', 'day', 'r_p', 'r_f', 'im_f', 'uss_p', 'uss_f', 'vh_p', 'vh_f', 'prod_f', 'ch_f',
+                       'konv_p',
+                       'aks_p', 'aks_f', 'sch_p', 'sch_f', 'adt_p', 'adt_f', 'kred_p', 'kred_f', 'tn_p', 'tn_f',
+                       'empl_f']
+
+        df2.index = df2['day']
+        df2 = df2[df2.index.notnull()]
+
+        df2['konv_f'] = df2['ch_f'] / df2['vh_f']
+        df2['week'] = df2.index.weekofyear
+
+        codes1 = ['650/', '640/', '6502']
+        names = ('650', '640', '6502')
+
+        for i, j in enumerate(codes1):
+            codes1[i] = df2[df2.store.str.startswith(j)].drop(columns='store')
+
+        dfd = dict(zip(names, codes1))  # df по дням
+
+        lst = (('r_', 'vh_', 'konv_'),
+               ('uss_', 'aks_', 'sch_'),
+               ('tn_', 'kred_', 'adt_'))
+
+        lst_ = tuple([y for x in lst for y in x])
+
+        for k in dfd:
+            for i in dfd[k].columns:
+                dfd[k][i + '_D-7'] = dfd[k][i].shift(7)
+            for i in lst_:
+                dfd[k][i + 'fp'] = dfd[k][i + 'f'] / dfd[k][i + 'p']
+                dfd[k][i + 'diff%'] = (dfd[k][i + 'f'] - dfd[k][i + 'f_D-7']) / dfd[k][i + 'f_D-7']
+                dfd[k][i + 'diff'] = dfd[k][i + 'f'] - dfd[k][i + 'f_D-7']
+
+
 
 
 

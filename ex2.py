@@ -11,6 +11,7 @@ import loader
 
 names = ('650/000', '640/000', '6502')
 getdata = loader.LoadBIData()
+#getdata.load_files()
 
 
 lst = (('r_', 'vh_', 'konv_'),
@@ -82,7 +83,7 @@ def update_year(value):
                Input('input-store', 'value')])
 def update_week(val1, val2):
     if val1 and val2:
-        y2 = [4, 3, 2, 1]  # dfd[val2][str(val1)]['week'].unique().tolist()
+        y2 = [5, 4, 3, 2, 1]  # dfd[val2][str(val1)]['week'].unique().tolist()
         y2.sort(reverse=True)
 
         return [{'label': x, 'value': x} for x in y2]
@@ -103,7 +104,7 @@ def update_chart(inp_store, inp_year, inp_week):
         dtn = datetime.datetime.now()
         if (dtn.year, int(dtn.strftime('%V'))) == (inp_year, inp_week):
             current_week = True
-        current_week = True
+        # current_week = True
 
         df_cw, df_pw, df_py = getdata.get_curr_week(inp_store, results=False)
 
@@ -123,7 +124,7 @@ def update_chart(inp_store, inp_year, inp_week):
                              subplot_titles=('Реал', '1', 'Вход', '2',  'Конв', '3',
                                              'Усс', '4', 'Акс', '5', 'СЧ', '6',
                                              'ТН', '7', 'Кред', '8', 'АДТ', '9'),
-                             horizontal_spacing=0.035, vertical_spacing=0.1)
+                             horizontal_spacing=0.04, vertical_spacing=0.15)
 
         for ro in range(1, row_+1):
             for co in range(1, col_+1, 2):
@@ -138,7 +139,7 @@ def update_chart(inp_store, inp_year, inp_week):
                 m = max(df_cw[p].max(), df_cw[f].max()) * 1.1
 
                 trace_plan = go.Scatter(x=lbl_x_axis, y=df_cw[p], name="План", mode='lines', marker_color='red')
-                trace_fact = go.Scatter(x=lbl_x_axis, y=df_cw[f], name="Факт", mode='lines', marker_color='green')
+                trace_fact = go.Scatter(x=lbl_x_axis, y=df_cw[f], name="Факт", mode='lines+markers', marker_color='green')
                 trace_diff = go.Bar(x=lbl_x_axis, y=d, hovertext=h, hovertemplate='%{y:.2%}, %{hovertext:.3s}',
                                     textposition='auto', text=d, texttemplate="%{y:%}", name="Откл.",
                                     marker_color='LightBlue', opacity=0.5)
@@ -169,6 +170,7 @@ def update_chart(inp_store, inp_year, inp_week):
                 if current_week:
                     y_cw, y_pw, y_py = getdata.get_curr_week(inp_store, results=True, kpi=kp+'f')
                     y4 = getdata.get_curr_week(inp_store, results=True, kpi=kp+'fp')[0]
+                    diff = y_cw - y_pw
 
                 else:
                     y_pw = 0.7
@@ -176,8 +178,9 @@ def update_chart(inp_store, inp_year, inp_week):
                     y_py = 0.8
 
                 # trace_bar_plan = go.Bar(name='План', y=[0], width=0, marker_color='#7FFF00') # , marker_color='lightgray'
-                trace_bar_prev = go.Bar(name='Факт', y=[y_pw], width=12, marker_color='#FF8800') # , marker_color='papayawhip'
-                trace_bar_curr = go.Bar(name='Факт-1', y=[y_cw], width=6, marker_color='green') # , marker_color='green'
+                trace_bar_prev = go.Bar(name='Факт НЕД-1', x=[inp_week], y=[y_pw], width=12, marker_color='#FF8800') # , marker_color='papayawhip'
+                trace_bar_curr = go.Bar(name='Факт', x=[inp_week], y=[y_cw], width=6, marker_color='green',
+                                        hovertext=[str(diff)], hovertemplate='%{y:f}<br>%{hovertext:+,.2f}') # , marker_color='green'
 
                 figm.add_traces([trace_bar_prev, trace_bar_curr], rows=[ro]*2, cols=[co]*2)
 
@@ -189,7 +192,7 @@ def update_chart(inp_store, inp_year, inp_week):
                         [13, 15, 17]]
                 pos = map_[ro-1][int(co/2)-1]
                 figm['layout']['annotations'][pos]['text'] = f'{y4*100:.1f}%'
-                figm['layout']['annotations'][pos]['bgcolor'] = 'rgb(255, 100, 0, 0)'
+                # figm['layout']['annotations'][pos]['bgcolor'] = 'rgb(255, 100, 0, 0)'
 
         figm.update_layout(title_text=f"Неделя {inp_week}, магазин {inp_store}", title_font_size=14,
                            template='presentation', showlegend=False, height=700, width=1200)
