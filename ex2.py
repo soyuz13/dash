@@ -14,9 +14,9 @@ getdata = loader.LoadBIData()
 #getdata.load_files()
 
 
-lst = (('r_', 'vh_', 'konv_'),
-       ('uss_', 'aks_', 'sch_'),
-       ('tn_', 'kred_', 'adt_'))
+lst = (('r_', 'tn_', 'sch_' ,  'uss_'),
+       ('vh_', 'kred_', 'ch_', 'konvss_'),
+       ('konv_', 'im_', 'aks_', 'adt_'))
 
 lst_ = tuple([y for x in lst for y in x])
 
@@ -64,7 +64,7 @@ app.layout = html.Div([
 ])
 
 row_ = 3
-col_ = 6
+col_ = 8
 
 
 @app.callback(Output('input-year', 'options'),
@@ -117,13 +117,13 @@ def update_chart(inp_store, inp_year, inp_week):
             x_txt.append(str(k) + '<br>' + str(int(empl_cw[i])) + '/' + str(int(empl_pw[i])))
         lbl_x_axis = x_txt
 
-        figm = make_subplots(rows=row_, cols=col_, column_width=[0.28, 0.04, 0.28, 0.04, 0.28, 0.04],
-                             specs=[[{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}],
-                                    [{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}],
-                                    [{"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}, {"secondary_y": True}, {'l': 0.002, 'r': 0.008}]],
-                             subplot_titles=('Реал', '1', 'Вход', '2',  'Конв', '3',
-                                             'Усс', '4', 'Акс', '5', 'СЧ', '6',
-                                             'ТН', '7', 'Кред', '8', 'АДТ', '9'),
+        figm = make_subplots(rows=row_, cols=col_, column_width=[0.23, 0.02, 0.23, 0.02, 0.23, 0.02, 0.23, 0.02],
+                             specs=[[{"secondary_y": True}, {}, {"secondary_y": True}, {}, {"secondary_y": True}, {}, {"secondary_y": True}, {}],
+                                    [{"secondary_y": True}, {}, {"secondary_y": True}, {}, {"secondary_y": True}, {}, {"secondary_y": True}, {}],
+                                    [{"secondary_y": True}, {}, {"secondary_y": True}, {}, {"secondary_y": True}, {}, {"secondary_y": True}, {}]],
+                             subplot_titles=('Реал', '1', 'ТН', '2', 'СЧ', '3', 'Усс', '33',
+                                             'Вход', '4', 'Кред', '5', 'СП', '6', 'Конв УСС', '66',
+                                             'Конв', '7', 'ИМ', '8', 'Акс', '9', 'АДТ', '66'),
                              horizontal_spacing=0.04, vertical_spacing=0.15)
 
         for ro in range(1, row_+1):
@@ -147,13 +147,13 @@ def update_chart(inp_store, inp_year, inp_week):
                 figm.add_traces([trace_plan, trace_fact, trace_diff], secondary_ys=[False, False, True],
                                 rows=[ro]*3, cols=[co]*3)
 
-                t_fmt = [['.4s', '.3s', '%'],
-                         ['.3s', '%', '.2s'],
-                         ['.3s', '%', '.2s']]
+                t_fmt = [['.4s', '.3s', '.2s', '.2s'],
+                         ['.3s', '%.2s', '.2s', '%'],
+                         ['%', '.3s', '%', '%']]
 
-                d_tick = [[250000, 100, None],
-                          [10000, 0.02, 2000],
-                          [100000, 0.04, 0.005]]
+                d_tick = [[250000, 50000, 2000, 4000],
+                          [100, 0.04, 20, 0.1],
+                          [0.05, 20000, 0.02, 0.1]]
 
                 figm.update_yaxes(range=[0, m], tickformat=t_fmt[ro-1][co2], dtick=d_tick[ro-1][co2],
                                   row=ro, col=co, tickfont=dict(size=9))
@@ -177,6 +177,7 @@ def update_chart(inp_store, inp_year, inp_week):
                     y_cw = 0.6
                     y_py = 0.8
 
+                # TODO: создать матрицу с форматами подписей
                 # trace_bar_plan = go.Bar(name='План', y=[0], width=0, marker_color='#7FFF00') # , marker_color='lightgray'
                 trace_bar_prev = go.Bar(name='Факт НЕД-1', x=[inp_week], y=[y_pw], width=12, marker_color='#FF8800') # , marker_color='papayawhip'
                 trace_bar_curr = go.Bar(name='Факт', x=[inp_week], y=[y_cw], width=6, marker_color='green',
@@ -187,15 +188,15 @@ def update_chart(inp_store, inp_year, inp_week):
                 figm.update_xaxes(row=ro, col=co, visible=False)
                 figm.update_yaxes(row=ro, col=co, visible=False)
 
-                map_ = [[1, 3, 5],
-                        [7, 9, 11],
-                        [13, 15, 17]]
+                map_ = [[1, 3, 5, 7],
+                        [9, 11, 13, 15],
+                        [15, 17, 19, 21]]
                 pos = map_[ro-1][int(co/2)-1]
                 figm['layout']['annotations'][pos]['text'] = f'{y4*100:.1f}%'
                 # figm['layout']['annotations'][pos]['bgcolor'] = 'rgb(255, 100, 0, 0)'
 
         figm.update_layout(title_text=f"Неделя {inp_week}, магазин {inp_store}", title_font_size=14,
-                           template='presentation', showlegend=False, height=700, width=1200)
+                           template='presentation', showlegend=False, height=700, width=1280)
 
         #print(figm)
         return figm

@@ -7,8 +7,9 @@ import datetime
 class LoadBIData:
     def __init__(self):
         self.col_lst = ['store', 'day', 'r_p', 'r_f', 'im_f', 'uss_p', 'uss_f', 'vh_p',
-               'vh_f', 'prod_f', 'ch_f','konv_p', 'aks_p', 'aks_f', 'sch_p', 'sch_f',
-               'adt_p', 'adt_f', 'kred_p', 'kred_f', 'tn_p', 'tn_f', 'empl_f']
+                        'vh_f', 'prod_f', 'ch_f','konv_p', 'aks_p', 'aks_f', 'sch_p', 'sch_f',
+                        'adt_p', 'adt_f', 'kred_p', 'kred_f', 'tn_p', 'tn_f', 'empl_f',
+                        'ch_p', 'konvss_f']
         self.store_lst = ['650', '640', '6502']
         self._store_bi = ['650/000', '640/000', '6502']
 
@@ -31,12 +32,22 @@ class LoadBIData:
             return pd.NaT
 
     def _create_df(self, fil, sheet):
-        df = pd.read_excel(fil, sheet_name=sheet, usecols=[x for x in range(23)],
+        df = pd.read_excel(fil, sheet_name=sheet, usecols=[x for x in range(25)],
                            skiprows=4, parse_dates=[1], date_parser=self._pars)
+
+        #print(-1, df.columns)
         df.columns = self.col_lst
+        #print(-2)
         df.set_index('day', drop=True, inplace=True)
         df['konv_f'] = df['ch_f'] / df['vh_f']
+        #print(-3)
+        df['im_p'] = df['im_f']
+        #print(-4)
+        df['konvss_p'] = 0.5
+
         d = df.columns.to_list()
+
+        # print(d)
         for i in d:
             kpi = i[:-1]
             if i[-1] == 'p':
